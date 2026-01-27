@@ -8,15 +8,16 @@
     {
       "port": 10086, 
       "listen": "127.0.0.1", 
-      "tag": "vmess-in", 
-      "protocol": "vmess", 
+      "tag": "vless-in",
+      "protocol": "vless",
       "settings": {
         "clients": [
           {
             "id": "3f3effce-2640-4f29-b95b-a2106df6d96d", 
             "alterId": 64
           }
-        ]
+        ],
+        "decryption": "none"
       }, 
       "streamSettings": {
         "network": "ws", 
@@ -54,7 +55,7 @@
       {
         "type": "field",
         "inboundTag": [
-          "vmess-in"
+          "vless-in"
         ],
         "outboundTag": "direct"
       }
