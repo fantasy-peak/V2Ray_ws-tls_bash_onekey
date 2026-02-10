@@ -413,7 +413,9 @@ nginx_install() {
     sed -i 's/#user  nobody;/user  root;/' ${nginx_dir}/conf/nginx.conf
     sed -i 's/worker_processes  1;/worker_processes  3;/' ${nginx_dir}/conf/nginx.conf
     sed -i 's/    worker_connections  1024;/    worker_connections  4096;/' ${nginx_dir}/conf/nginx.conf
+    cp ${nginx_dir}/conf/nginx.conf ${nginx_dir}/conf/cpp_nginx.conf
     sed -i '$i include conf.d/*.conf;' ${nginx_dir}/conf/nginx.conf
+    sed -i '$i include conf.d/*.conf;' ${nginx_dir}/conf/cpp_nginx.conf
 
     # 删除临时文件
     rm -rf ../nginx-"${nginx_version}"
@@ -605,6 +607,44 @@ nginx_conf_add() {
         return 301 https://use.shadowsocksr.win\$request_uri;
     }
 EOF
+
+    touch ${nginx_conf_dir}/cpp.conf
+    cat >${nginx_conf_dir}/cpp.conf <<EOF
+    server {
+        listen unix:/dev/shm/nginx_server.sock;
+        ssl_certificate       /data/v2ray.crt;
+        ssl_certificate_key   /data/v2ray.key;
+        ssl_protocols         TLSv1.3;
+        ssl_ciphers           TLS13-AES-256-GCM-SHA384:TLS13-CHACHA20-POLY1305-SHA256:TLS13-AES-128-GCM-SHA256:TLS13-AES-128-CCM-8-SHA256:TLS13-AES-128-CCM-SHA256:EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;
+        server_name           serveraddr.com;
+        index index.html index.htm;
+        root  /home/wwwroot/3DCEList;
+        error_page 400 = /400.html;
+
+        # Config for 0-RTT in TLSv1.3
+        ssl_early_data on;
+        ssl_stapling on;
+        ssl_stapling_verify on;
+        add_header Strict-Transport-Security "max-age=31536000";
+
+        location /ray/
+        {
+        proxy_redirect off;
+        proxy_read_timeout 1200s;
+        proxy_pass http://127.0.0.1:6000/;
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$http_host;
+
+        # Config for 0-RTT in TLSv1.3
+        proxy_set_header Early-Data \$ssl_early_data;
+        }
+}
+EOF
+
 
     modify_nginx_port
     modify_nginx_other
